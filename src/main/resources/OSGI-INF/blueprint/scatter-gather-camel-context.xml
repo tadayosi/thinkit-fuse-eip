@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" xmlns:camel="http://camel.apache.org/schema/blueprint"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="
+      http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+      http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+  <bean id="aggregationStrategy" class="com.redhat.examples.fuse.eip.SetAggregationStrategy" />
+
+  <camelContext trace="false" xmlns="http://camel.apache.org/schema/blueprint">
+    <route id="EIP-Scatter">
+      <description>Recipient List pattern</description>
+      <from uri="direct:scatter/in" />
+      <setHeader headerName="addresses">
+        <constant>seda:processA, seda:processB, seda:processC</constant>
+      </setHeader>
+      <recipientList>
+        <header>addresses</header>
+      </recipientList>
+      <log message="addresses: ${header.addresses}, body: ${body}" />
+    </route>
+    <route id="EIP-Gather">
+      <description>Aggregator pattern</description>
+      <from uri="seda:gather/in" />
+      <aggregate strategyRef="aggregationStrategy">
+        <correlationExpression>
+          <header>aggregateId</header>
+        </correlationExpression>
+        <completionTimeout>
+          <constant>1000</constant>
+        </completionTimeout>
+        <log message="body: ${body}" />
+        <to uri="direct:gather/out" />
+      </aggregate>
+    </route>
+    <route id="ProcessA">
+      <from uri="seda:processA" />
+      <transform>
+        <simple>*** ${body} ***</simple>
+      </transform>
+      <to uri="seda:gather/in" />
+    </route>
+    <route id="ProcessB">
+      <from uri="seda:processB" />
+      <transform>
+        <simple>&lt;&lt;&lt; ${body} &gt;&gt;&gt;</simple>
+      </transform>
+      <to uri="seda:gather/in" />
+    </route>
+    <route id="ProcessC">
+      <from uri="seda:processC" />
+      <transform>
+        <simple>!!! ${body} !!!</simple>
+      </transform>
+      <to uri="seda:gather/in" />
+    </route>
+  </camelContext>
+
+</blueprint>
