@@ -31,7 +31,6 @@ public class AggregatorTest extends CamelBlueprintTestSupport {
     @Test
     public void aggregator() throws Exception {
         MockEndpoint out = getMockEndpoint("mock:out");
-        out.expectedMessageCount(1);
         out.expectedBodiesReceived(
                 newArrayList("AAA", "BBB", "CCC"),
                 newArrayList("aaa", "bbb"),
